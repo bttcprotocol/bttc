@@ -235,6 +235,10 @@ func ethFilter(args []string) (nodeFilter, error) {
 		filter = forkid.NewStaticFilter(params.GoerliChainConfig, params.GoerliGenesisHash)
 	case "ropsten":
 		filter = forkid.NewStaticFilter(params.RopstenChainConfig, params.RopstenGenesisHash)
+	case "donau":
+		filter = forkid.NewStaticFilter(params.DonauChainConfig, params.DonauGenesisHash)
+	case "bor-mainnet":
+		filter = forkid.NewStaticFilter(params.BttcMainnetChainConfig, params.BttcMainnetGenesisHash)
 	default:
 		return nil, fmt.Errorf("unknown network %q", args[0])
 	}
