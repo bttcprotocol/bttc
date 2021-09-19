@@ -13,16 +13,16 @@ GO ?= latest
 GORUN = env GO111MODULE=on go run
 GOPATH = $(shell go env GOPATH)
 
-bor:
+bttc:
 	$(GORUN) build/ci.go install ./cmd/geth
 	mkdir -p $(GOPATH)/bin/
-	cp $(GOBIN)/geth $(GOBIN)/bor
+	cp $(GOBIN)/geth $(GOBIN)/bttc
 	cp $(GOBIN)/* $(GOPATH)/bin/
 
-bor-all:
+bttc-all:
 	$(GORUN) build/ci.go install
 	mkdir -p $(GOPATH)/bin/
-	cp $(GOBIN)/geth $(GOBIN)/bor
+	cp $(GOBIN)/geth $(GOBIN)/bttc
 	cp $(GOBIN)/* $(GOPATH)/bin/
 
 geth:

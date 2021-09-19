@@ -1,20 +1,20 @@
-## Bor
+## Bttc
 
-Official Golang implementation of the Matic protocol (fork of Go Ethereum - https://github.com/ethereum/go-ethereum)
+Official Golang implementation of the BTTC protocol
 
 ## Building the source
 
-Building `bor` requires both a Go (version 1.14 or later) and a C compiler. You can install
+Building `bttc` requires both a Go (version 1.14 or later) and a C compiler. You can install
 them using your favourite package manager. Once the dependencies are installed, run
 
 ```shell
-make bor
+make bttc
 ```
 
 or, to build the full suite of utilities:
 
 ```shell
-make bor-all
+make bttc-all
 ```
 
 ## License
