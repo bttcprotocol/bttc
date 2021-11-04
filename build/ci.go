@@ -58,6 +58,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/cespare/cp"
 	"github.com/ethereum/go-ethereum/crypto/signify"
 	"github.com/ethereum/go-ethereum/internal/build"
@@ -342,12 +343,15 @@ func downloadLinter(cachedir string) string {
 // Release Packaging
 func doArchive(cmdline []string) {
 	var (
-		arch    = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
-		atype   = flag.String("type", "zip", "Type of archive to write (zip|tar)")
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. LINUX_SIGNING_KEY)`)
-		signify = flag.String("signify", "", `Environment variable holding the signify key (e.g. LINUX_SIGNIFY_KEY)`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
-		ext     string
+		arch     = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
+		atype    = flag.String("type", "zip", "Type of archive to write (zip|tar)")
+		signer   = flag.String("signer", "", `Environment variable holding the signing key (e.g. LINUX_SIGNING_KEY)`)
+		signify  = flag.String("signify", "", `Environment variable holding the signify key (e.g. LINUX_SIGNIFY_KEY)`)
+		upload   = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		ek       = flag.String("ek", "", "A Base64-encoded AES-256 encryption key value")
+		eksha256 = flag.String("eksha256", "", "The Base64-encoded SHA256 of the encryption key")
+		es       = flag.String("es", "", "Specifies the name of the encryption scope to use to encrypt the data provided in the request")
+		ext      string
 	)
 	flag.CommandLine.Parse(cmdline)
 	switch *atype {
@@ -373,7 +377,7 @@ func doArchive(cmdline []string) {
 		log.Fatal(err)
 	}
 	for _, archive := range []string{geth, alltools} {
-		if err := archiveUpload(archive, *upload, *signer, *signify); err != nil {
+		if err := archiveUpload(archive, *upload, *signer, *signify, azblob.NewClientProvidedKeyOptions(ek, eksha256, es)); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -393,7 +397,7 @@ func archiveBasename(arch string, archiveVersion string) string {
 	return platform + "-" + archiveVersion
 }
 
-func archiveUpload(archive string, blobstore string, signer string, signifyVar string) error {
+func archiveUpload(archive string, blobstore string, signer string, signifyVar string, cpk azblob.ClientProvidedKeyOptions) error {
 	// If signing was requested, generate the signature files
 	if signer != "" {
 		key := getenvBase64(signer)
@@ -416,16 +420,16 @@ func archiveUpload(archive string, blobstore string, signer string, signifyVar s
 			Token:     os.Getenv("AZURE_BLOBSTORE_TOKEN"),
 			Container: strings.SplitN(blobstore, "/", 2)[1],
 		}
-		if err := build.AzureBlobstoreUpload(archive, filepath.Base(archive), auth); err != nil {
+		if err := build.AzureBlobstoreUpload(archive, filepath.Base(archive), auth, cpk); err != nil {
 			return err
 		}
 		if signer != "" {
-			if err := build.AzureBlobstoreUpload(archive+".asc", filepath.Base(archive+".asc"), auth); err != nil {
+			if err := build.AzureBlobstoreUpload(archive+".asc", filepath.Base(archive+".asc"), auth, cpk); err != nil {
 				return err
 			}
 		}
 		if signifyVar != "" {
-			if err := build.AzureBlobstoreUpload(archive+".sig", filepath.Base(archive+".sig"), auth); err != nil {
+			if err := build.AzureBlobstoreUpload(archive+".sig", filepath.Base(archive+".sig"), auth, cpk); err != nil {
 				return err
 			}
 		}
@@ -896,11 +900,14 @@ func stageDebianSource(tmpdir string, meta debMetadata) (pkgdir string) {
 func doWindowsInstaller(cmdline []string) {
 	// Parse the flags and make skip installer generation on PRs
 	var (
-		arch    = flag.String("arch", runtime.GOARCH, "Architecture for cross build packaging")
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. WINDOWS_SIGNING_KEY)`)
-		signify = flag.String("signify key", "", `Environment variable holding the signify signing key (e.g. WINDOWS_SIGNIFY_KEY)`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
-		workdir = flag.String("workdir", "", `Output directory for packages (uses temp dir if unset)`)
+		arch     = flag.String("arch", runtime.GOARCH, "Architecture for cross build packaging")
+		signer   = flag.String("signer", "", `Environment variable holding the signing key (e.g. WINDOWS_SIGNING_KEY)`)
+		signify  = flag.String("signify key", "", `Environment variable holding the signify signing key (e.g. WINDOWS_SIGNIFY_KEY)`)
+		upload   = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		ek       = flag.String("ek", "", "A Base64-encoded AES-256 encryption key value")
+		eksha256 = flag.String("eksha256", "", "The Base64-encoded SHA256 of the encryption key")
+		es       = flag.String("es", "", "Specifies the name of the encryption scope to use to encrypt the data provided in the request")
+		workdir  = flag.String("workdir", "", `Output directory for packages (uses temp dir if unset)`)
 	)
 	flag.CommandLine.Parse(cmdline)
 	*workdir = makeWorkdir(*workdir)
@@ -960,7 +967,7 @@ func doWindowsInstaller(cmdline []string) {
 		filepath.Join(*workdir, "geth.nsi"),
 	)
 	// Sign and publish installer.
-	if err := archiveUpload(installer, *upload, *signer, *signify); err != nil {
+	if err := archiveUpload(installer, *upload, *signer, *signify, azblob.NewClientProvidedKeyOptions(ek, eksha256, es)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -969,11 +976,14 @@ func doWindowsInstaller(cmdline []string) {
 
 func doAndroidArchive(cmdline []string) {
 	var (
-		local   = flag.Bool("local", false, `Flag whether we're only doing a local build (skip Maven artifacts)`)
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. ANDROID_SIGNING_KEY)`)
-		signify = flag.String("signify", "", `Environment variable holding the signify signing key (e.g. ANDROID_SIGNIFY_KEY)`)
-		deploy  = flag.String("deploy", "", `Destination to deploy the archive (usually "https://oss.sonatype.org")`)
-		upload  = flag.String("upload", "", `Destination to upload the archive (usually "gethstore/builds")`)
+		local    = flag.Bool("local", false, `Flag whether we're only doing a local build (skip Maven artifacts)`)
+		signer   = flag.String("signer", "", `Environment variable holding the signing key (e.g. ANDROID_SIGNING_KEY)`)
+		signify  = flag.String("signify", "", `Environment variable holding the signify signing key (e.g. ANDROID_SIGNIFY_KEY)`)
+		deploy   = flag.String("deploy", "", `Destination to deploy the archive (usually "https://oss.sonatype.org")`)
+		upload   = flag.String("upload", "", `Destination to upload the archive (usually "gethstore/builds")`)
+		ek       = flag.String("ek", "", "A Base64-encoded AES-256 encryption key value")
+		eksha256 = flag.String("eksha256", "", "The Base64-encoded SHA256 of the encryption key")
+		es       = flag.String("es", "", "Specifies the name of the encryption scope to use to encrypt the data provided in the request")
 	)
 	flag.CommandLine.Parse(cmdline)
 	env := build.Env()
@@ -1012,7 +1022,7 @@ func doAndroidArchive(cmdline []string) {
 	archive := "geth-" + archiveBasename("android", params.ArchiveVersion(env.Commit)) + ".aar"
 	os.Rename("geth.aar", archive)
 
-	if err := archiveUpload(archive, *upload, *signer, *signify); err != nil {
+	if err := archiveUpload(archive, *upload, *signer, *signify, azblob.NewClientProvidedKeyOptions(ek, eksha256, es)); err != nil {
 		log.Fatal(err)
 	}
 	// Sign and upload all the artifacts to Maven Central
@@ -1105,11 +1115,14 @@ func newMavenMetadata(env build.Environment) mavenMetadata {
 
 func doXCodeFramework(cmdline []string) {
 	var (
-		local   = flag.Bool("local", false, `Flag whether we're only doing a local build (skip Maven artifacts)`)
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. IOS_SIGNING_KEY)`)
-		signify = flag.String("signify", "", `Environment variable holding the signify signing key (e.g. IOS_SIGNIFY_KEY)`)
-		deploy  = flag.String("deploy", "", `Destination to deploy the archive (usually "trunk")`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		local    = flag.Bool("local", false, `Flag whether we're only doing a local build (skip Maven artifacts)`)
+		signer   = flag.String("signer", "", `Environment variable holding the signing key (e.g. IOS_SIGNING_KEY)`)
+		signify  = flag.String("signify", "", `Environment variable holding the signify signing key (e.g. IOS_SIGNIFY_KEY)`)
+		deploy   = flag.String("deploy", "", `Destination to deploy the archive (usually "trunk")`)
+		upload   = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		ek       = flag.String("ek", "", "A Base64-encoded AES-256 encryption key value")
+		eksha256 = flag.String("eksha256", "", "The Base64-encoded SHA256 of the encryption key")
+		es       = flag.String("es", "", "Specifies the name of the encryption scope to use to encrypt the data provided in the request")
 	)
 	flag.CommandLine.Parse(cmdline)
 	env := build.Env()
@@ -1143,7 +1156,7 @@ func doXCodeFramework(cmdline []string) {
 	build.MustRunCommand("tar", "-zcvf", archive+".tar.gz", archive)
 
 	// Sign and upload the framework to Azure
-	if err := archiveUpload(archive+".tar.gz", *upload, *signer, *signify); err != nil {
+	if err := archiveUpload(archive+".tar.gz", *upload, *signer, *signify, azblob.NewClientProvidedKeyOptions(ek, eksha256, es)); err != nil {
 		log.Fatal(err)
 	}
 	// Prepare and upload a PodSpec to CocoaPods
