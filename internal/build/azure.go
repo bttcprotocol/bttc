@@ -35,8 +35,8 @@ type AzureBlobstoreConfig struct {
 }
 
 var (
-	ek       = "w9z$C&F)J@NcRfUjXnZr4u7x!A%D*G-KaPdSgVkYp3s5v8y/B?E(H+MbQeThWmZq"
-	eksha256 = "4a9b169f79cfb4b09e284406835cf74b121788e16582b8de7a62316171fcfc07"
+	ek       = ""
+	eksha256 = ""
 	es       = ""
 )
 
