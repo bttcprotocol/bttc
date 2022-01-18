@@ -16,6 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/node"
+
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/crypto/sha3"
 
@@ -219,6 +222,7 @@ type Bor struct {
 	lock   sync.RWMutex   // Protects the signer fields
 
 	ethAPI                 *ethapi.PublicBlockChainAPI
+	ethClient              *ethclient.Client
 	GenesisContractsClient *GenesisContractsClient
 	validatorSetABI        abi.ABI
 	stateReceiverABI       abi.ABI
@@ -237,6 +241,7 @@ func New(
 	ethAPI *ethapi.PublicBlockChainAPI,
 	heimdallURL string,
 	withoutHeimdall bool,
+	stack *node.Node,
 ) *Bor {
 	// get bor config
 	borConfig := chainConfig.Bor
@@ -253,6 +258,12 @@ func New(
 	sABI, _ := abi.JSON(strings.NewReader(stateReceiverABI))
 	heimdallClient, _ := NewHeimdallClient(heimdallURL)
 	genesisContractsClient := NewGenesisContractsClient(chainConfig, borConfig.ValidatorContract, borConfig.StateReceiverContract, ethAPI)
+	rpcClient, err := stack.Attach()
+	// Create a client to interact with local geth node.
+	if err != nil {
+		panic(fmt.Sprintf("Failed to attach to self: %v", err))
+	}
+	client := ethclient.NewClient(rpcClient)
 	c := &Bor{
 		chainConfig:            chainConfig,
 		config:                 borConfig,
@@ -265,6 +276,7 @@ func New(
 		GenesisContractsClient: genesisContractsClient,
 		HeimdallClient:         heimdallClient,
 		WithoutHeimdall:        withoutHeimdall,
+		ethClient:              client,
 	}
 
 	// make sure we can decode all the GenesisAlloc in the BorConfig.
@@ -339,6 +351,32 @@ func (c *Bor) verifyHeader(chain consensus.ChainHeaderReader, header *types.Head
 	if isSprintEnd && signersBytes%validatorHeaderBytesLength != 0 {
 		return errInvalidSpanValidators
 	}
+
+	// verify the validator list in the last sprint block
+	if isSprintEnd {
+		// no sync currently running
+		if rawProgress, err := c.ethClient.SyncProgress(context.Background()); rawProgress == nil && err == nil {
+			if currentValidators, err := c.GetCurrentValidators(header.ParentHash, number+1); err == nil {
+				validators := header.Extra[extraVanity : len(header.Extra)-extraSeal]
+				validatorsBytes := make([]byte, len(currentValidators)*validatorHeaderBytesLength)
+				// sort validator by address
+				sort.Sort(ValidatorsByAddress(currentValidators))
+				for i, validator := range currentValidators {
+					copy(validatorsBytes[i*validatorHeaderBytesLength:], validator.HeaderBytes())
+				}
+
+				if !bytes.Equal(validators, validatorsBytes) {
+					// Resolve the authorization key and check against signers
+					signer, _ := ecrecover(header, c.signatures)
+					log.Error("❌ verifyValidatorsSet", "block", number, "signer", signer)
+					return &MismatchingValidatorsError{number, validatorsBytes, validators}
+				}
+			}
+
+		}
+
+	}
+
 	// Ensure that the mix digest is zero as we don't have fork protection currently
 	if header.MixDigest != (common.Hash{}) {
 		return errInvalidMixDigest
