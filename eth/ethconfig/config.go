@@ -226,7 +226,7 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, et
 	}
 	// If Matic bor consensus is requested, set it up
 	if chainConfig.Bor != nil {
-		return bor.New(chainConfig, db, blockchainAPI, ethConfig.HeimdallURL, ethConfig.WithoutHeimdall)
+		return bor.New(chainConfig, db, blockchainAPI, ethConfig.HeimdallURL, ethConfig.WithoutHeimdall, stack)
 	}
 	// Otherwise assume proof-of-work
 	switch config.PowMode {

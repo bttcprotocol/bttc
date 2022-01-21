@@ -350,7 +350,8 @@ type BorConfig struct {
 	ValidatorContract     string `json:"validatorContract"`     // Validator set contract
 	StateReceiverContract string `json:"stateReceiverContract"` // State receiver contract
 
-	OverrideStateSyncRecords map[string]int `json:"overrideStateSyncRecords"` // override state records count
+	OverrideStateSyncRecords map[string]int         `json:"overrideStateSyncRecords"` // override state records count
+	BlockAlloc               map[string]interface{} `json:"blockAlloc"`
 }
 
 // String implements the stringer interface, returning the consensus engine details.
