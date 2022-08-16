@@ -45,6 +45,8 @@ const (
 	checkpointInterval = 1024 // Number of blocks after which to save the vote snapshot to the database
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
+
+	allowFutureBlockTimeSeconds = int64(3) // Max seconds from current time to allow for blocks before they are considered as future blocks
 )
 
 // Bor protocol constants.
@@ -320,7 +322,7 @@ func (c *Bor) verifyHeader(chain consensus.ChainHeaderReader, header *types.Head
 	number := header.Number.Uint64()
 
 	// Don't waste time checking blocks from the future
-	if header.Time > uint64(time.Now().Unix()) {
+	if header.Time > uint64(time.Now().Unix()+allowFutureBlockTimeSeconds) {
 		return consensus.ErrFutureBlock
 	}
 
