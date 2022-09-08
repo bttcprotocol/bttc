@@ -44,7 +44,7 @@ import (
 
 const (
 	clientIdentifier     = "bor" // Client identifier to advertise over the network
-	repositoryIdentifier = "go-bor"
+	repositoryIdentifier = "go-bttc"
 )
 
 var (
