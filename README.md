@@ -1,6 +1,6 @@
 ## Bttc
 
-Official Golang implementation of the BTTC protocol
+Official Golang implementation of the BTTC protocol. It is a fork of Go Ethereum - https://github.com/ethereum/go-ethereum and EVM compatible.
 
 ## Building the source
 
