@@ -1139,7 +1139,9 @@ func (c *Bor) CommitStates(
 	eventRecords, err := c.HeimdallClient.FetchStateSyncEvents(lastStateID+1, to.Unix())
 	if c.config.OverrideStateSyncRecords != nil {
 		if val, ok := c.config.OverrideStateSyncRecords[strconv.FormatUint(number, 10)]; ok {
-			eventRecords = eventRecords[0:val]
+			if val < len(eventRecords) {
+				eventRecords = eventRecords[0:val]
+			}
 		}
 	}
 
