@@ -690,6 +690,9 @@ func (c *Clique) SealHash(header *types.Header) common.Hash {
 	return SealHash(header)
 }
 
+// StopClient implements consensus.Engine. It will close any information fetching client before closing engine.
+func (c *Clique) StopClient() {}
+
 // Close implements consensus.Engine. It's a noop for clique as there are no background threads.
 func (c *Clique) Close() error {
 	return nil
