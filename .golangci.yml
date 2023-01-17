@@ -32,6 +32,7 @@ linters-settings:
     min-occurrences: 6 # minimum number of occurrences
 
 issues:
+  new: true
   exclude-rules:
     - path: crypto/blake2b/
       linters:
