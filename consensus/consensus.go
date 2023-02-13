@@ -114,6 +114,10 @@ type Engine interface {
 	// APIs returns the RPC APIs this consensus engine provides.
 	APIs(chain ChainHeaderReader) []rpc.API
 
+	// StopClient terminates any background client maintained by the consensus engine.
+	// It is used to release resources related with information fetching.
+	StopClient()
+
 	// Close terminates any background threads maintained by the consensus engine.
 	Close() error
 }
