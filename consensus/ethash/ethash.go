@@ -544,6 +544,8 @@ func NewShared() *Ethash {
 	return &Ethash{shared: sharedEthash}
 }
 
+func (ethhash *Ethash) StopClient() {}
+
 // Close closes the exit channel to notify all backend threads exiting.
 func (ethash *Ethash) Close() error {
 	ethash.closeOnce.Do(func() {

@@ -80,3 +80,5 @@ func (_m *IHeimdallClient) FetchWithRetry(path string, query string) (*bor.Respo
 
 	return r0, r1
 }
+
+func(_m *IHeimdallClient) Close() {}
