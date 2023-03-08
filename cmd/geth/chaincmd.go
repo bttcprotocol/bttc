@@ -68,8 +68,6 @@ It expects the genesis file as argument.`,
 			utils.RopstenFlag,
 			utils.RinkebyFlag,
 			utils.GoerliFlag,
-			utils.DonauFlag,
-			utils.BttcMainnetFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `

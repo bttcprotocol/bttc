@@ -59,24 +59,6 @@ func GoerliGenesis() string {
 	return string(enc)
 }
 
-// DonauGenesis returns the JSON spec to use for the Donau test network
-func DonauGenesis() string {
-	enc, err := json.Marshal(core.DefaultDonauGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
-}
-
-// BttcMainnetGenesis returns the JSON spec to use for the Donau test network
-func BttcMainnetGenesis() string {
-	enc, err := json.Marshal(core.DefaultBttcMainnetGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
-}
-
 // FoundationBootnodes returns the enode URLs of the P2P bootstrap nodes operated
 // by the foundation running the V5 discovery protocol.
 func FoundationBootnodes() *Enodes {

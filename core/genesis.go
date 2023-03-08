@@ -252,8 +252,8 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return params.RinkebyChainConfig
 	case ghash == params.GoerliGenesisHash:
 		return params.GoerliChainConfig
-	case ghash == params.DonauGenesisHash:
-		return params.DonauChainConfig
+	case ghash == params.BttcDonauGenesisHash:
+		return params.BttcDonauChainConfig
 	case ghash == params.BttcMainnetGenesisHash:
 		return params.BttcMainnetChainConfig
 	default:
@@ -405,17 +405,17 @@ func DefaultGoerliGenesisBlock() *Genesis {
 	}
 }
 
-// DefaultDonauGenesisBlock returns the Donau network genesis block.
-func DefaultDonauGenesisBlock() *Genesis {
+// DefaultBttcDonauGenesisBlock returns the Bttc Donau network genesis block.
+func DefaultBttcDonauGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params.DonauChainConfig,
+		Config:     params.BttcDonauChainConfig,
 		Nonce:      0x0,
 		Timestamp:  0x5ce28211,
 		GasLimit:   0x989680,
 		Difficulty: big.NewInt(1),
 		Mixhash:    common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 		Coinbase:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		Alloc:      readPrealloc("allocs/donau.json"),
+		Alloc:      readPrealloc("allocs/bttc-donau.json"),
 		Number:     0x0,
 		GasUsed:    0x0,
 		ParentHash: common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),

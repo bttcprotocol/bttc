@@ -31,7 +31,7 @@ var (
 	RopstenGenesisHash     = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
 	RinkebyGenesisHash     = common.HexToHash("0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177")
 	GoerliGenesisHash      = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
-	DonauGenesisHash       = common.HexToHash("0x9b0a7d8dcbdef00594103f1addbe206daa55f2e422ace24419b7680b3fb34cf5")
+	BttcDonauGenesisHash   = common.HexToHash("0x9b0a7d8dcbdef00594103f1addbe206daa55f2e422ace24419b7680b3fb34cf5")
 	BttcMainnetGenesisHash = common.HexToHash("0x021eb3b7c4161d91f6f92632ebe6e28aa440dd23e3016c086d0fad4b119fcdc1")
 )
 
@@ -222,8 +222,8 @@ var (
 		Threshold: 2,
 	}
 
-	// DonauChainConfig contains the chain parameters to run a node on the Donau test network.
-	DonauChainConfig = &ChainConfig{
+	// BttcDonauChainConfig contains the chain parameters to run a node on the Bttc Donau test network.
+	BttcDonauChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(1029),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
@@ -271,8 +271,10 @@ var (
 	BttcMainnetChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(199),
 		HomesteadBlock:      big.NewInt(0),
-		EIP150Block:         big.NewInt(0),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
 		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),

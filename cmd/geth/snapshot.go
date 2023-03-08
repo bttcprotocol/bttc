@@ -63,7 +63,6 @@ var (
 					utils.RopstenFlag,
 					utils.RinkebyFlag,
 					utils.GoerliFlag,
-					utils.DonauFlag,
 					utils.CacheTrieJournalFlag,
 					utils.BloomFilterSizeFlag,
 				},
@@ -114,7 +113,6 @@ In other words, this command does the snapshot to trie conversion.
 					utils.RopstenFlag,
 					utils.RinkebyFlag,
 					utils.GoerliFlag,
-					utils.DonauFlag,
 				},
 				Description: `
 geth snapshot traverse-state <state-root>

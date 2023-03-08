@@ -135,8 +135,8 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		}
 	}
 
-	if ctx.GlobalIsSet(utils.DonauFlag.Name) {
-		setDefaultDonauGethConfig(ctx, &cfg)
+	if ctx.GlobalIsSet(utils.BttcDonauFlag.Name) {
+		setDefaultBttcDonauGethConfig(ctx, &cfg)
 	}
 
 	if ctx.GlobalIsSet(utils.BttcMainnetFlag.Name) {
@@ -339,13 +339,13 @@ func setAccountManagerBackends(stack *node.Node) error {
 	return nil
 }
 
-func setDefaultDonauGethConfig(ctx *cli.Context, config *gethConfig) {
+func setDefaultBttcDonauGethConfig(ctx *cli.Context, config *gethConfig) {
 	config.Node.P2P.ListenAddr = fmt.Sprintf(":%d", 30303)
 	config.Node.HTTPHost = "0.0.0.0"
 	config.Node.HTTPVirtualHosts = []string{"*"}
 	config.Node.HTTPCors = []string{"*"}
 	config.Node.HTTPPort = 8545
-	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bor.ipc"
+	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bttc.ipc"
 	config.Node.HTTPModules = []string{"eth", "net", "web3", "txpool", "bor"}
 	config.Eth.SyncMode = downloader.FullSync
 	config.Eth.NetworkId = 1029
@@ -372,7 +372,7 @@ func setDefaultBttcMainnetGethConfig(ctx *cli.Context, config *gethConfig) {
 	config.Node.HTTPVirtualHosts = []string{"*"}
 	config.Node.HTTPCors = []string{"*"}
 	config.Node.HTTPPort = 8545
-	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bor.ipc"
+	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bttc.ipc"
 	config.Node.HTTPModules = []string{"eth", "net", "web3", "txpool", "bor"}
 	config.Eth.SyncMode = downloader.FullSync
 	config.Eth.NetworkId = 199

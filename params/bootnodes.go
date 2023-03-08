@@ -67,9 +67,9 @@ var GoerliBootnodes = []string{
 	"enode://a59e33ccd2b3e52d578f1fbd70c6f9babda2650f0760d6ff3b37742fdcdfdb3defba5d56d315b40c46b70198c7621e63ffa3f987389c7118634b0fefbbdfa7fd@51.15.119.157:40303",
 }
 
-// DonauBootnodes are the enode URLs of the P2P bootstrap nodes running on the
-// Donau test network.
-var DonauBootnodes = []string{
+// BttcDonauBootnodes are the enode URLs of the P2P bootstrap nodes running on the
+// Bttc Donau test network.
+var BttcDonauBootnodes = []string{
 	"enode://2e6a732ba9d0fcf102a4f4bda7d76f28095c9f03ee56bc89dc5c2235cd527c914b6063b0c76598cc37287f0594ae4022df550c592b3ba2a56a9f02810edbeee1@52.53.72.234:30303",
 	"enode://3d7da6d583072fbbe733135047010698e8b6a24c9315ce953b09dddbfabb2476c8b720b2ff2beb2ec73ef111b691c7dcd87f5e42bcba4a7bc385b7f728b2ab44@54.176.105.93:30303",
 }
@@ -117,10 +117,6 @@ func KnownDNSNetwork(genesis common.Hash, protocol string) string {
 		net = "rinkeby"
 	case GoerliGenesisHash:
 		net = "goerli"
-	case DonauGenesisHash:
-		net = "donau"
-	case BttcMainnetGenesisHash:
-		net = "bor-mainnet"
 	default:
 		return ""
 	}

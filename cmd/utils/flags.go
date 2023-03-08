@@ -155,9 +155,9 @@ var (
 		Name:  "ropsten",
 		Usage: "Ropsten network: pre-configured proof-of-work test network",
 	}
-	DonauFlag = cli.BoolFlag{
-		Name:  "donau",
-		Usage: "Donau network: pre-configured proof-of-stake test network",
+	BttcDonauFlag = cli.BoolFlag{
+		Name:  "bttc-donau",
+		Usage: "Bttc Donau network: pre-configured proof-of-stake test network",
 	}
 	BttcMainnetFlag = cli.BoolFlag{
 		Name:  "bttc-mainnet",
@@ -805,10 +805,6 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.GlobalBool(GoerliFlag.Name) {
 			return filepath.Join(path, "goerli")
 		}
-		if ctx.GlobalBool(DonauFlag.Name) {
-			homeDir, _ := os.UserHomeDir()
-			return filepath.Join(homeDir, "/.bor/data")
-		}
 		return path
 	}
 	Fatalf("Cannot determine default data directory, please set manually (--datadir)")
@@ -861,8 +857,8 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = params.RinkebyBootnodes
 	case ctx.GlobalBool(GoerliFlag.Name):
 		urls = params.GoerliBootnodes
-	case ctx.GlobalBool(DonauFlag.Name):
-		urls = params.DonauBootnodes
+	case ctx.GlobalBool(BttcDonauFlag.Name):
+		urls = params.BttcDonauBootnodes
 	case ctx.GlobalBool(BttcMainnetFlag.Name):
 		urls = params.BttcMainnetBootnodes
 	case cfg.BootstrapNodes != nil:
@@ -1308,12 +1304,12 @@ func setDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "rinkeby")
 	case ctx.GlobalBool(GoerliFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "goerli")
-	case ctx.GlobalBool(DonauFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+	case ctx.GlobalBool(BttcDonauFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		homeDir, _ := os.UserHomeDir()
-		cfg.DataDir = filepath.Join(homeDir, "/.bor/data")
+		cfg.DataDir = filepath.Join(homeDir, "/.bttc/data")
 	case ctx.GlobalBool(BttcMainnetFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		homeDir, _ := os.UserHomeDir()
-		cfg.DataDir = filepath.Join(homeDir, "/.bor/data")
+		cfg.DataDir = filepath.Join(homeDir, "/.bttc/data")
 	}
 }
 
@@ -1499,7 +1495,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag, DonauFlag, BttcMainnetFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag, BttcDonauFlag, BttcMainnetFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 	if ctx.GlobalString(GCModeFlag.Name) == "archive" && ctx.GlobalUint64(TxLookupLimitFlag.Name) != 0 {
@@ -1656,15 +1652,15 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
-	case ctx.GlobalBool(DonauFlag.Name):
+	case ctx.GlobalBool(BttcDonauFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 80001
+			cfg.NetworkId = 1029
 		}
-		cfg.Genesis = core.DefaultDonauGenesisBlock()
-		SetDNSDiscoveryDefaults(cfg, params.DonauGenesisHash)
+		cfg.Genesis = core.DefaultBttcDonauGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.BttcDonauGenesisHash)
 	case ctx.GlobalBool(BttcMainnetFlag.Name):
-		if !ctx.GlobalIsSet(BttcMainnetFlag.Name) {
-			cfg.NetworkId = 137
+		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 199
 		}
 		cfg.Genesis = core.DefaultBttcMainnetGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.BttcMainnetGenesisHash)
@@ -1888,8 +1884,8 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultRinkebyGenesisBlock()
 	case ctx.GlobalBool(GoerliFlag.Name):
 		genesis = core.DefaultGoerliGenesisBlock()
-	case ctx.GlobalBool(DonauFlag.Name):
-		genesis = core.DefaultDonauGenesisBlock()
+	case ctx.GlobalBool(BttcDonauFlag.Name):
+		genesis = core.DefaultBttcDonauGenesisBlock()
 	case ctx.GlobalBool(BttcMainnetFlag.Name):
 		genesis = core.DefaultBttcMainnetGenesisBlock()
 	case ctx.GlobalBool(DeveloperFlag.Name):

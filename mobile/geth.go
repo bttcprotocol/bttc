@@ -179,20 +179,6 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 				config.EthereumNetworkID = 5
 			}
 		}
-		// If we have the Bor Mainnet, hard code the chain configs too
-		if config.EthereumGenesis == BttcMainnetGenesis() {
-			genesis.Config = params.BttcMainnetChainConfig
-			if config.EthereumNetworkID == 1 {
-				config.EthereumNetworkID = 137
-			}
-		}
-		// If we have the Donau testnet, hard code the chain configs too
-		if config.EthereumGenesis == DonauGenesis() {
-			genesis.Config = params.DonauChainConfig
-			if config.EthereumNetworkID == 1 {
-				config.EthereumNetworkID = 80001
-			}
-		}
 	}
 	// Register the Ethereum protocol if requested
 	if config.EthereumEnabled {
