@@ -805,7 +805,8 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.GlobalBool(GoerliFlag.Name) {
 			return filepath.Join(path, "goerli")
 		}
-		if ctx.GlobalBool(BttcDonauFlag.Name) || ctx.GlobalBool(BttcMainnetFlag.Name) {
+		if (ctx.GlobalBool(BttcDonauFlag.Name) || ctx.GlobalBool(BttcMainnetFlag.Name)) &&
+			path == node.DefaultDataDir() {
 			homeDir, _ := os.UserHomeDir()
 			return filepath.Join(homeDir, "/.bttc/data")
 		}
