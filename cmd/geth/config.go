@@ -352,9 +352,10 @@ func setDefaultBttcDonauGethConfig(ctx *cli.Context, config *gethConfig) {
 	config.Node.AllowUnprotectedTxs = true
 	config.Eth.RPCTxFeeCap = 0
 	config.Eth.Miner.GasCeil = 20000000
-	config.Eth.Miner.GasPrice = big.NewInt(300000000000000)
+	config.Eth.Miner.GasPrice = big.NewInt(9000000000000000)
 	//--miner.gastarget is depreceated, No longed used
-	config.Eth.GPO.MaxPrice = big.NewInt(500000000000000)
+	config.Eth.GPO.MaxPrice = big.NewInt(15000000000000000)
+	config.Eth.TxPool.PriceLimit = 9000000000000000
 	config.Eth.TxPool.NoLocals = true
 	config.Eth.TxPool.AccountSlots = 16
 	config.Eth.TxPool.GlobalSlots = 131072
