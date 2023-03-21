@@ -75,7 +75,7 @@ var BttcDonauBootnodes = []string{
 }
 
 // BttcMainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
-// main Bor network.
+// Bttc main  network.
 var BttcMainnetBootnodes = []string{
 	"enode://8ef920be1d44ad7c41a517a6420e43511f2e30d1c35a4bb05954c9f413b1712dae6e9e05f56595966470506891ff05d203e233c2e8f6df8c72621537a3d783e9@54.157.35.210:30303",
 	"enode://f3a2534ac30db7387f84c1262bce9a0737c46a8b5627f8193d412a4bde415c191191bbf984f51e04e5d974e62b70fab148f38522c5e2917ca1f1860361f14cc9@107.20.250.182:30303",
