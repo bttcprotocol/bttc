@@ -18,6 +18,7 @@ package core
 
 import (
 	"bytes"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -41,6 +42,9 @@ import (
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
 //go:generate gencodec -type GenesisAccount -field-override genesisAccountMarshaling -out gen_genesis_account.go
+
+//go:embed allocs
+var allocs embed.FS
 
 var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
@@ -248,6 +252,10 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return params.RinkebyChainConfig
 	case ghash == params.GoerliGenesisHash:
 		return params.GoerliChainConfig
+	case ghash == params.BttcDonauGenesisHash:
+		return params.BttcDonauChainConfig
+	case ghash == params.BttcMainnetGenesisHash:
+		return params.BttcMainnetChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -397,6 +405,40 @@ func DefaultGoerliGenesisBlock() *Genesis {
 	}
 }
 
+// DefaultBttcDonauGenesisBlock returns the Bttc Donau network genesis block.
+func DefaultBttcDonauGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.BttcDonauChainConfig,
+		Nonce:      0x0,
+		Timestamp:  0x5ce28211,
+		GasLimit:   0x989680,
+		Difficulty: big.NewInt(1),
+		Mixhash:    common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		Coinbase:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		Alloc:      readPrealloc("allocs/bttc-donau.json"),
+		Number:     0x0,
+		GasUsed:    0x0,
+		ParentHash: common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+	}
+}
+
+//DefaultBttcMainnet returns the Bor Mainnet network gensis block.
+func DefaultBttcMainnetGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.BttcMainnetChainConfig,
+		Nonce:      0x0,
+		Timestamp:  0x5ce28211,
+		GasLimit:   0x989680,
+		Difficulty: big.NewInt(1),
+		Mixhash:    common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		Coinbase:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		Alloc:      readPrealloc("allocs/bttc-mainnet.json"),
+		Number:     0x0,
+		GasUsed:    0x0,
+		ParentHash: common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+	}
+}
+
 // DeveloperGenesisBlock returns the 'geth --dev' genesis block.
 func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
@@ -436,6 +478,21 @@ func decodePrealloc(data string) GenesisAlloc {
 	ga := make(GenesisAlloc, len(p))
 	for _, account := range p {
 		ga[common.BigToAddress(account.Addr)] = GenesisAccount{Balance: account.Balance}
+	}
+	return ga
+}
+
+func readPrealloc(filename string) GenesisAlloc {
+	f, err := allocs.Open(filename)
+	if err != nil {
+		panic(fmt.Sprintf("Could not open genesis preallocation for %s: %v", filename, err))
+	}
+	defer f.Close()
+	decoder := json.NewDecoder(f)
+	ga := make(GenesisAlloc)
+	err = decoder.Decode(&ga)
+	if err != nil {
+		panic(fmt.Sprintf("Could not parse genesis preallocation for %s: %v", filename, err))
 	}
 	return ga
 }
