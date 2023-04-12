@@ -155,6 +155,14 @@ var (
 		Name:  "ropsten",
 		Usage: "Ropsten network: pre-configured proof-of-work test network",
 	}
+	BttcDonauFlag = cli.BoolFlag{
+		Name:  "bttc-donau",
+		Usage: "Bttc Donau network: pre-configured proof-of-stake test network",
+	}
+	BttcMainnetFlag = cli.BoolFlag{
+		Name:  "bttc-mainnet",
+		Usage: "Bttc mainnet",
+	}
 	DeveloperFlag = cli.BoolFlag{
 		Name:  "dev",
 		Usage: "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
@@ -797,6 +805,12 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.GlobalBool(GoerliFlag.Name) {
 			return filepath.Join(path, "goerli")
 		}
+		if (ctx.GlobalBool(BttcDonauFlag.Name) || ctx.GlobalBool(BttcMainnetFlag.Name)) &&
+			path == node.DefaultDataDir() {
+			homeDir, _ := os.UserHomeDir()
+			return filepath.Join(homeDir, "/.bttc/data")
+		}
+
 		return path
 	}
 	Fatalf("Cannot determine default data directory, please set manually (--datadir)")
@@ -849,6 +863,10 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = params.RinkebyBootnodes
 	case ctx.GlobalBool(GoerliFlag.Name):
 		urls = params.GoerliBootnodes
+	case ctx.GlobalBool(BttcDonauFlag.Name):
+		urls = params.BttcDonauBootnodes
+	case ctx.GlobalBool(BttcMainnetFlag.Name):
+		urls = params.BttcMainnetBootnodes
 	case cfg.BootstrapNodes != nil:
 		return // already set, don't apply defaults.
 	}
@@ -1292,6 +1310,12 @@ func setDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "rinkeby")
 	case ctx.GlobalBool(GoerliFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "goerli")
+	case ctx.GlobalBool(BttcDonauFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		homeDir, _ := os.UserHomeDir()
+		cfg.DataDir = filepath.Join(homeDir, "/.bttc/data")
+	case ctx.GlobalBool(BttcMainnetFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		homeDir, _ := os.UserHomeDir()
+		cfg.DataDir = filepath.Join(homeDir, "/.bttc/data")
 	}
 }
 
@@ -1477,7 +1501,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag, BttcDonauFlag, BttcMainnetFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 	if ctx.GlobalString(GCModeFlag.Name) == "archive" && ctx.GlobalUint64(TxLookupLimitFlag.Name) != 0 {
@@ -1503,7 +1527,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.BorLogs = ctx.GlobalBool(BorLogsFlag.Name)
 	}
 
-  // Cap the cache allowance and tune the garbage collector
+	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
 	if err == nil {
 		if 32<<(^uintptr(0)>>63) == 32 && mem.Total > 2*1024*1024*1024 {
@@ -1634,6 +1658,18 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
+	case ctx.GlobalBool(BttcDonauFlag.Name):
+		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 1029
+		}
+		cfg.Genesis = core.DefaultBttcDonauGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.BttcDonauGenesisHash)
+	case ctx.GlobalBool(BttcMainnetFlag.Name):
+		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 199
+		}
+		cfg.Genesis = core.DefaultBttcMainnetGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.BttcMainnetGenesisHash)
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337
@@ -1854,6 +1890,10 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultRinkebyGenesisBlock()
 	case ctx.GlobalBool(GoerliFlag.Name):
 		genesis = core.DefaultGoerliGenesisBlock()
+	case ctx.GlobalBool(BttcDonauFlag.Name):
+		genesis = core.DefaultBttcDonauGenesisBlock()
+	case ctx.GlobalBool(BttcMainnetFlag.Name):
+		genesis = core.DefaultBttcMainnetGenesisBlock()
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}

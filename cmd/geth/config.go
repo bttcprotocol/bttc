@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"os"
 	"reflect"
+	"time"
 	"unicode"
 
 	"gopkg.in/urfave/cli.v1"
@@ -33,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/eth/catalyst"
+	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
@@ -131,6 +133,14 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		if err := loadConfig(file, &cfg); err != nil {
 			utils.Fatalf("%v", err)
 		}
+	}
+
+	if ctx.GlobalIsSet(utils.BttcDonauFlag.Name) {
+		setDefaultBttcDonauGethConfig(ctx, &cfg)
+	}
+
+	if ctx.GlobalIsSet(utils.BttcMainnetFlag.Name) {
+		setDefaultBttcMainnetGethConfig(ctx, &cfg)
 	}
 
 	// Apply flags.
@@ -327,4 +337,59 @@ func setAccountManagerBackends(stack *node.Node) error {
 	}
 
 	return nil
+}
+
+func setDefaultBttcDonauGethConfig(ctx *cli.Context, config *gethConfig) {
+	config.Node.P2P.ListenAddr = fmt.Sprintf(":%d", 30303)
+	config.Node.HTTPHost = "0.0.0.0"
+	config.Node.HTTPVirtualHosts = []string{"*"}
+	config.Node.HTTPCors = []string{"*"}
+	config.Node.HTTPPort = 8545
+	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bttc.ipc"
+	config.Node.HTTPModules = []string{"eth", "net", "web3", "txpool", "bor"}
+	config.Eth.SyncMode = downloader.FullSync
+	config.Eth.NetworkId = 1029
+	config.Node.AllowUnprotectedTxs = true
+	config.Eth.RPCTxFeeCap = 0
+	config.Eth.Miner.GasCeil = 20000000
+	config.Eth.Miner.GasPrice = big.NewInt(9000000000000000)
+	//--miner.gastarget is depreceated, No longed used
+	config.Eth.GPO.MaxPrice = big.NewInt(15000000000000000)
+	config.Eth.TxPool.PriceLimit = 9000000000000000
+	config.Eth.TxPool.NoLocals = true
+	config.Eth.TxPool.AccountSlots = 16
+	config.Eth.TxPool.GlobalSlots = 131072
+	config.Eth.TxPool.AccountQueue = 64
+	config.Eth.TxPool.GlobalQueue = 131072
+	config.Eth.TxPool.Lifetime = 90 * time.Minute
+	config.Node.P2P.MaxPeers = 200
+	config.Metrics.Enabled = true
+	// --pprof is enabled in 'internal/debug/flags.go'
+}
+
+func setDefaultBttcMainnetGethConfig(ctx *cli.Context, config *gethConfig) {
+	config.Node.P2P.ListenAddr = fmt.Sprintf(":%d", 30303)
+	config.Node.HTTPHost = "0.0.0.0"
+	config.Node.HTTPVirtualHosts = []string{"*"}
+	config.Node.HTTPCors = []string{"*"}
+	config.Node.HTTPPort = 8545
+	config.Node.IPCPath = utils.MakeDataDir(ctx) + "/bttc.ipc"
+	config.Node.HTTPModules = []string{"eth", "net", "web3", "txpool", "bor"}
+	config.Eth.SyncMode = downloader.FullSync
+	config.Eth.NetworkId = 199
+	config.Node.AllowUnprotectedTxs = true
+	config.Eth.RPCTxFeeCap = 0
+	config.Eth.Miner.GasCeil = 20000000
+	config.Eth.Miner.GasPrice = big.NewInt(300000000000000)
+	//--miner.gastarget is depreceated, No longed used
+	config.Eth.GPO.MaxPrice = big.NewInt(500000000000000)
+	config.Eth.TxPool.NoLocals = true
+	config.Eth.TxPool.AccountSlots = 16
+	config.Eth.TxPool.GlobalSlots = 131072
+	config.Eth.TxPool.AccountQueue = 64
+	config.Eth.TxPool.GlobalQueue = 131072
+	config.Eth.TxPool.Lifetime = 90 * time.Minute
+	config.Node.P2P.MaxPeers = 200
+	config.Metrics.Enabled = true
+	// --pprof is enabled in 'internal/debug/flags.go'
 }
