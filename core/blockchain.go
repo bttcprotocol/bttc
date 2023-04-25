@@ -1218,11 +1218,9 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 				rawdb.WriteHeadFastBlockHash(bc.db, head.Hash())
 				bc.currentFastBlock.Store(head)
 				headFastBlockGauge.Update(int64(head.NumberU64()))
-				bc.chainmu.Unlock()
 				return true
 			}
 		}
-		bc.chainmu.Unlock()
 		return false
 	}
 	// writeAncient writes blockchain and corresponding receipt chain into ancient store.
