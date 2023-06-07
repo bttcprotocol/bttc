@@ -410,6 +410,31 @@ func (c *Bor) verifyCascadingFields(chain consensus.ChainHeaderReader, header *t
 	if err != nil {
 		return err
 	}
+	// Verify the validator list match the local contract
+	if isSprintStart(number+1, c.config.Sprint) {
+		newValidators, err := c.GetCurrentValidatorsByBlockNrOrHash(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber), number+1)
+		if err != nil {
+			return err
+		}
+
+		sort.Sort(ValidatorsByAddress(newValidators))
+
+		headerVals, err := ParseValidators(header.Extra[extraVanity : len(header.Extra)-extraSeal])
+
+		if err != nil {
+			return err
+		}
+
+		if len(newValidators) != len(headerVals) {
+			return errInvalidSpanValidators
+		}
+
+		for i, val := range newValidators {
+			if !bytes.Equal(val.HeaderBytes(), headerVals[i].HeaderBytes()) {
+				return errInvalidSpanValidators
+			}
+		}
+	}
 
 	// verify the validator list in the last sprint block
 	if isSprintStart(number, c.config.Sprint) {
@@ -985,6 +1010,59 @@ func (c *Bor) GetCurrentValidators(headerHash common.Hash, blockNumber uint64) (
 		ret0 = new([]common.Address)
 		ret1 = new([]*big.Int)
 	)
+	out := &[]interface{}{
+		ret0,
+		ret1,
+	}
+
+	if err := c.validatorSetABI.UnpackIntoInterface(out, method, result); err != nil {
+		return nil, err
+	}
+
+	valz := make([]*Validator, len(*ret0))
+	for i, a := range *ret0 {
+		valz[i] = &Validator{
+			Address:     a,
+			VotingPower: (*ret1)[i].Int64(),
+		}
+	}
+
+	return valz, nil
+}
+
+// GetCurrentValidatorsByBlockNrOrHash get current validators
+func (c *Bor) GetCurrentValidatorsByBlockNrOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, blockNumber uint64) ([]*Validator, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// method
+	const method = "getBorValidators"
+
+	data, err := c.validatorSetABI.Pack(method, big.NewInt(0).SetUint64(blockNumber))
+	if err != nil {
+		log.Error("Unable to pack tx for getValidator", "error", err)
+		return nil, err
+	}
+
+	// call
+	msgData := (hexutil.Bytes)(data)
+	toAddress := common.HexToAddress(c.config.ValidatorContract)
+	gas := (hexutil.Uint64)(uint64(math.MaxUint64 / 2))
+
+	result, err := c.ethAPI.Call(ctx, ethapi.TransactionArgs{
+		Gas:  &gas,
+		To:   &toAddress,
+		Data: &msgData,
+	}, blockNrOrHash, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		ret0 = new([]common.Address)
+		ret1 = new([]*big.Int)
+	)
+
 	out := &[]interface{}{
 		ret0,
 		ret1,
