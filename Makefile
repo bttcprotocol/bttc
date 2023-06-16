@@ -47,8 +47,7 @@ ios:
 
 test: all
 	# $(GORUN) build/ci.go test
-	go test github.com/ethereum/go-ethereum/consensus/bor
-	go test github.com/ethereum/go-ethereum/tests/bor
+	go test --timeout 5m  -cover -short  -coverprofile=cover.out -covermode=atomic ./consensus/bor ./tests/bor
 
 lint: ## Run linters.
 	$(GORUN) build/ci.go lint
