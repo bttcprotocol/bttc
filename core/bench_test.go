@@ -245,6 +245,7 @@ func makeChainForBench(db ethdb.Database, full bool, count uint64) {
 			block := types.NewBlockWithHeader(header)
 			rawdb.WriteBody(db, hash, n, block.Body())
 			rawdb.WriteReceipts(db, hash, n, nil)
+			rawdb.WriteHeadBlockHash(db, hash)
 		}
 	}
 }
@@ -279,6 +280,9 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 	makeChainForBench(db, full, count)
 	db.Close()
 
+	cacheConfig := *defaultCacheConfig
+	cacheConfig.TrieDirtyDisabled = true
+
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -287,7 +291,7 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 		if err != nil {
 			b.Fatalf("error opening database at %v: %v", dir, err)
 		}
-		chain, err := NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+		chain, err := NewBlockChain(db, &cacheConfig, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
 		if err != nil {
 			b.Fatalf("error creating chain: %v", err)
 		}
