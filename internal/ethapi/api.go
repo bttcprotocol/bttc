@@ -1592,10 +1592,31 @@ func NewPublicTransactionPoolAPI(b Backend, nonceLock *AddrLocker) *PublicTransa
 	return &PublicTransactionPoolAPI{b, nonceLock, signer}
 }
 
+// returns block transactions along with state-sync transaction if present
+// nolint: unparam
+func (api *PublicTransactionPoolAPI) getAllBlockTransactions(ctx context.Context, block *types.Block) (types.Transactions, bool) {
+	txs := block.Transactions()
+
+	stateSyncPresent := false
+
+	borReceipt := rawdb.ReadBorReceipt(api.b.ChainDb(), block.Hash(), block.NumberU64())
+	if borReceipt != nil {
+		txHash := types.GetDerivedBorTxHash(types.BorReceiptKey(block.Number().Uint64(), block.Hash()))
+		if txHash != (common.Hash{}) {
+			borTx, _, _, _, _ := api.b.GetBorBlockTransactionWithBlockHash(ctx, txHash, block.Hash())
+			txs = append(txs, borTx)
+			stateSyncPresent = true
+		}
+	}
+
+	return txs, stateSyncPresent
+}
+
 // GetBlockTransactionCountByNumber returns the number of transactions in the block with the given block number.
 func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
 	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		n := hexutil.Uint(len(block.Transactions()))
+		txs, _ := s.getAllBlockTransactions(ctx, block)
+		n := hexutil.Uint(len(txs))
 		return &n
 	}
 	return nil
@@ -1604,7 +1625,8 @@ func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByNumber(ctx context.
 // GetBlockTransactionCountByHash returns the number of transactions in the block with the given hash.
 func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByHash(ctx context.Context, blockHash common.Hash) *hexutil.Uint {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		n := hexutil.Uint(len(block.Transactions()))
+		txs, _ := s.getAllBlockTransactions(ctx, block)
+		n := hexutil.Uint(len(txs))
 		return &n
 	}
 	return nil
