@@ -241,6 +241,7 @@ func init() {
 		utils.ShowDeprecated,
 		// See snapshot.go
 		snapshotCommand,
+		fingerprintCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
