@@ -240,6 +240,10 @@ func (m *txSortedMap) Flatten() types.Transactions {
 // transaction with the highest nonce
 func (m *txSortedMap) LastElement() *types.Transaction {
 	cache := m.flatten()
+	ln := len(cache)
+	if ln == 0 {
+		return nil
+	}
 	return cache[len(cache)-1]
 }
 
