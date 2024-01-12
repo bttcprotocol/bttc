@@ -58,6 +58,8 @@ var (
 
 const defaultErrorCode = -32000
 
+const errMsgBatchTooLarge = "batch too large"
+
 type methodNotFoundError struct{ method string }
 
 func (e *methodNotFoundError) ErrorCode() int { return -32601 }

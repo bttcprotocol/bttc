@@ -185,6 +185,9 @@ func (api *privateAdminAPI) StartHTTP(host *string, port *int, cors *string, api
 		CorsAllowedOrigins: api.node.config.HTTPCors,
 		Vhosts:             api.node.config.HTTPVirtualHosts,
 		Modules:            api.node.config.HTTPModules,
+		rpcEndpointConfig: rpcEndpointConfig{
+			batchItemLimit:         api.node.config.BatchRequestLimit,
+		},
 	}
 	if cors != nil {
 		config.CorsAllowedOrigins = nil

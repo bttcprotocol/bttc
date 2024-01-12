@@ -83,6 +83,9 @@ type Client struct {
 	// This function, if non-nil, is called when the connection is lost.
 	reconnectFunc reconnectFunc
 
+	// config fields
+	batchItemLimit int
+
 	// writeConn is used for writing to the connection on the caller's goroutine. It should
 	// only be accessed outside of dispatch, with the write lock held. The write lock is
 	// taken by sending on reqInit and released by sending on reqSent.
@@ -111,7 +114,7 @@ type clientConn struct {
 
 func (c *Client) newClientConn(conn ServerCodec) *clientConn {
 	ctx := context.WithValue(context.Background(), clientContextKey{}, c)
-	handler := newHandler(ctx, conn, c.idgen, c.services)
+	handler := newHandler(ctx, conn, c.idgen, c.services, c.batchItemLimit)
 	return &clientConn{conn, handler}
 }
 
