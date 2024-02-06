@@ -1,6 +1,7 @@
 package bor
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
@@ -42,7 +43,7 @@ func TestInsertingSpanSizeBlocks(t *testing.T) {
 	}
 
 	assert.True(t, h.AssertCalled(t, "FetchWithRetry", spanPath, ""))
-	validators, err := _bor.GetCurrentValidators(block.Hash(), spanSize) // check validator set at the first block of new span
+	validators, err := _bor.GetCurrentValidators(context.Background(), block.Hash(), spanSize) // check validator set at the first block of new span
 	if err != nil {
 		t.Fatalf("%s", err)
 	}

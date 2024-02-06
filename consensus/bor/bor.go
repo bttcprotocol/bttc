@@ -493,7 +493,7 @@ func (c *Bor) snapshot(chain consensus.ChainHeaderReader, number uint64, hash co
 				hash := checkpoint.Hash()
 
 				// get validators and current span
-				validators, err := c.GetCurrentValidators(hash, number+1)
+				validators, err := c.GetCurrentValidators(context.Background(), hash, number+1)
 				if err != nil {
 					return nil, err
 				}
@@ -647,7 +647,7 @@ func (c *Bor) Prepare(chain consensus.ChainHeaderReader, header *types.Header) e
 
 	// get validator set if number
 	if (number+1)%c.config.Sprint == 0 {
-		newValidators, err := c.GetCurrentValidators(header.ParentHash, number+1)
+		newValidators, err := c.GetCurrentValidators(context.Background(), header.ParentHash, number+1)
 		if err != nil {
 			return errors.New("unknown validators")
 		}
@@ -695,9 +695,10 @@ func (c *Bor) Finalize(chain consensus.ChainHeaderReader, header *types.Header, 
 	var err error
 	headerNumber := header.Number.Uint64()
 	if headerNumber%c.config.Sprint == 0 {
+		ctx := context.Background()
 		cx := chainContext{Chain: chain, Bor: c}
 		// check and commit span
-		if err := c.checkAndCommitSpan(state, header, cx); err != nil {
+		if err := c.checkAndCommitSpan(ctx, state, header, cx); err != nil {
 			log.Error("Error while committing span", "error", err)
 			return
 		}
@@ -761,10 +762,11 @@ func (c *Bor) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *typ
 
 	headerNumber := header.Number.Uint64()
 	if headerNumber%c.config.Sprint == 0 {
+		ctx := context.Background()
 		cx := chainContext{Chain: chain, Bor: c}
 
 		// check and commit span
-		err := c.checkAndCommitSpan(state, header, cx)
+		err := c.checkAndCommitSpan(ctx, state, header, cx)
 		if err != nil {
 			log.Error("Error while committing span", "error", err)
 			return nil, err
@@ -927,14 +929,14 @@ func (c *Bor) Close() error {
 }
 
 // GetCurrentSpan get current span from contract
-func (c *Bor) GetCurrentSpan(headerHash common.Hash) (*Span, error) {
+func (c *Bor) GetCurrentSpan(ctx context.Context, headerHash common.Hash) (*Span, error) {
 	// block
 	blockNr := rpc.BlockNumberOrHashWithHash(headerHash, false)
 
 	// method
 	method := "getCurrentSpan"
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	data, err := c.validatorSetABI.Pack(method)
@@ -976,14 +978,14 @@ func (c *Bor) GetCurrentSpan(headerHash common.Hash) (*Span, error) {
 }
 
 // GetCurrentValidators get current validators
-func (c *Bor) GetCurrentValidators(headerHash common.Hash, blockNumber uint64) ([]*Validator, error) {
+func (c *Bor) GetCurrentValidators(ctx context.Context, headerHash common.Hash, blockNumber uint64) ([]*Validator, error) {
 	// block
 	blockNr := rpc.BlockNumberOrHashWithHash(headerHash, false)
 
 	// method
 	method := "getBorValidators"
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	data, err := c.validatorSetABI.Pack(method, big.NewInt(0).SetUint64(blockNumber))
@@ -1084,17 +1086,18 @@ func (c *Bor) GetCurrentValidatorsByBlockNrOrHash(ctx context.Context, blockNrOr
 }
 
 func (c *Bor) checkAndCommitSpan(
+	ctx context.Context,
 	state *state.StateDB,
 	header *types.Header,
 	chain core.ChainContext,
 ) error {
 	headerNumber := header.Number.Uint64()
-	span, err := c.GetCurrentSpan(header.ParentHash)
+	span, err := c.GetCurrentSpan(ctx, header.ParentHash)
 	if err != nil {
 		return err
 	}
 	if c.needToCommitSpan(span, headerNumber) {
-		err := c.fetchAndCommitSpan(span.ID+1, state, header, chain)
+		err := c.fetchAndCommitSpan(ctx, span.ID+1, state, header, chain)
 		return err
 	}
 	return nil
@@ -1120,6 +1123,7 @@ func (c *Bor) needToCommitSpan(span *Span, headerNumber uint64) bool {
 }
 
 func (c *Bor) fetchAndCommitSpan(
+	ctx context.Context,
 	newSpanID uint64,
 	state *state.StateDB,
 	header *types.Header,
@@ -1128,7 +1132,7 @@ func (c *Bor) fetchAndCommitSpan(
 	var heimdallSpan HeimdallSpan
 
 	if c.WithoutHeimdall {
-		s, err := c.getNextHeimdallSpanForTest(newSpanID, state, header, chain)
+		s, err := c.getNextHeimdallSpanForTest(ctx, newSpanID, state, header, chain)
 		if err != nil {
 			return err
 		}
@@ -1277,13 +1281,14 @@ func (c *Bor) SetHeimdallClient(h IHeimdallClient) {
 //
 
 func (c *Bor) getNextHeimdallSpanForTest(
+	ctx context.Context,
 	newSpanID uint64,
 	state *state.StateDB,
 	header *types.Header,
 	chain core.ChainContext,
 ) (*HeimdallSpan, error) {
 	headerNumber := header.Number.Uint64()
-	span, err := c.GetCurrentSpan(header.ParentHash)
+	span, err := c.GetCurrentSpan(ctx, header.ParentHash)
 	if err != nil {
 		return nil, err
 	}
