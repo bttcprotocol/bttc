@@ -63,6 +63,56 @@ func (api *API) GetAuthor(number *rpc.BlockNumber) (*common.Address, error) {
 	return &author, err
 }
 
+type BlockSigners struct {
+	Signers map[common.Address]uint64
+	Diff    int
+	Author  common.Address
+}
+
+// GetSnapshotProposerSequence retrieves the in-turn signers of all sprints in a span
+func (api *API) GetSnapshotProposerSequence(number *rpc.BlockNumber) (BlockSigners, error) {
+
+	var difficulties = make(map[common.Address]uint64)
+	snap, err := api.GetSnapshot(number)
+	if err != nil {
+		return BlockSigners{}, err
+	}
+	proposer := snap.ValidatorSet.GetProposer().Address
+	proposerIndex, _ := snap.ValidatorSet.GetByAddress(proposer)
+
+	signers := snap.signers()
+	for i := 0; i < len(signers); i++ {
+		tempIndex := i
+		if tempIndex < proposerIndex {
+			tempIndex = tempIndex + len(signers)
+		}
+		difficulties[signers[i]] = uint64(len(signers) - (tempIndex - proposerIndex))
+	}
+
+	author, err := api.GetAuthor(number)
+	if err != nil {
+		return BlockSigners{}, err
+	}
+	diff := int(difficulties[*author])
+	blockSigners := &BlockSigners{
+		Signers: difficulties,
+		Diff:    diff,
+		Author:  *author,
+	}
+
+	return *blockSigners, nil
+}
+
+// GetSnapshotProposer retrieves the in-turn signer at a given block.
+func (api *API) GetSnapshotProposer(number *rpc.BlockNumber) (common.Address, error) {
+	*number -= 1
+	snap, err := api.GetSnapshot(number)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return snap.ValidatorSet.GetProposer().Address, nil
+}
+
 // GetSnapshotAtHash retrieves the state snapshot at a given block.
 func (api *API) GetSnapshotAtHash(hash common.Hash) (*Snapshot, error) {
 	header := api.chain.GetHeaderByHash(hash)

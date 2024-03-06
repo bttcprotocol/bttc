@@ -241,6 +241,7 @@ func init() {
 		utils.ShowDeprecated,
 		// See snapshot.go
 		snapshotCommand,
+		fingerprintCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
@@ -273,6 +274,12 @@ func main() {
 // prepare manipulates memory cache allowance and setups metric system.
 // This function should be called before launching devp2p stack.
 func prepare(ctx *cli.Context) {
+	//only support full sync
+	err := ctx.Set(utils.SyncModeFlag.Name, "full")
+	if err != nil {
+		log.Warn("Failed to set sync mode to full")
+	}
+
 	// If we're running a known preset, log it for convenience.
 	switch {
 	case ctx.GlobalIsSet(utils.RopstenFlag.Name):
