@@ -1603,7 +1603,7 @@ func (api *PublicTransactionPoolAPI) getAllBlockTransactions(ctx context.Context
 	if borReceipt != nil {
 		txHash := types.GetDerivedBorTxHash(types.BorReceiptKey(block.Number().Uint64(), block.Hash()))
 		if txHash != (common.Hash{}) {
-			borTx, _, _, _, _ := api.b.GetBorBlockTransactionWithBlockHash(ctx, txHash, block.Hash())
+			borTx, _, _, _, _ := api.b.GetBorBlockTransactionWithBlockHash(ctx, txHash, block.Hash()) //nolint:typecheck
 			txs = append(txs, borTx)
 			stateSyncPresent = true
 		}
