@@ -621,7 +621,11 @@ var (
 		Name:  "rpc.allow-unprotected-txs",
 		Usage: "Allow for unprotected (non EIP155 signed) transactions to be submitted via RPC",
 	}
-
+	BatchRequestLimit = cli.IntFlag{ //nolint:typecheck
+		Name:  "rpc.batch-request-limit",
+		Usage: "Maximum number of requests in a batch(only supported in http)",
+		Value: node.DefaultConfig.BatchRequestLimit,
+	}
 	// Network Settings
 	MaxPeersFlag = cli.IntFlag{
 		Name:  "maxpeers",
@@ -995,6 +999,10 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 	if ctx.GlobalIsSet(AllowUnprotectedTxs.Name) {
 		cfg.AllowUnprotectedTxs = ctx.GlobalBool(AllowUnprotectedTxs.Name)
 	}
+	if ctx.IsSet(BatchRequestLimit.Name) {
+		cfg.BatchRequestLimit = ctx.Int(BatchRequestLimit.Name)
+	}
+
 }
 
 // setGraphQL creates the GraphQL listener interface string from the set

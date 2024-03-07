@@ -96,9 +96,11 @@ func New(conf *Config) (*Node, error) {
 		return nil, errors.New(`Config.Name cannot end in ".ipc"`)
 	}
 
+	server := rpc.NewServer()
+	server.SetBatchLimits(conf.BatchRequestLimit)
 	node := &Node{
 		config:        conf,
-		inprocHandler: rpc.NewServer(),
+		inprocHandler: server,
 		eventmux:      new(event.TypeMux),
 		log:           conf.Logger,
 		stop:          make(chan struct{}),
@@ -350,6 +352,10 @@ func (n *Node) startRPC() error {
 		}
 	}
 
+	rpcConfig := rpcEndpointConfig{
+		batchItemLimit: n.config.BatchRequestLimit,
+	}
+
 	// Configure HTTP.
 	if n.config.HTTPHost != "" {
 		config := httpConfig{
@@ -357,6 +363,7 @@ func (n *Node) startRPC() error {
 			Vhosts:             n.config.HTTPVirtualHosts,
 			Modules:            n.config.HTTPModules,
 			prefix:             n.config.HTTPPathPrefix,
+			rpcEndpointConfig:  rpcConfig,
 		}
 		if err := n.http.setListenAddr(n.config.HTTPHost, n.config.HTTPPort); err != nil {
 			return err

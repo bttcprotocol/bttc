@@ -148,6 +148,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.WSApiFlag,
 			utils.WSPathPrefixFlag,
 			utils.WSAllowedOriginsFlag,
+			utils.BatchRequestLimit,
 			utils.GraphQLEnabledFlag,
 			utils.GraphQLCORSDomainFlag,
 			utils.GraphQLVirtualHostsFlag,

@@ -50,17 +50,18 @@ import (
 //    }
 //
 type handler struct {
-	reg            *serviceRegistry
-	unsubscribeCb  *callback
-	idgen          func() ID                      // subscription ID generator
-	respWait       map[string]*requestOp          // active client requests
-	clientSubs     map[string]*ClientSubscription // active client subscriptions
-	callWG         sync.WaitGroup                 // pending call goroutines
-	rootCtx        context.Context                // canceled by close()
-	cancelRoot     func()                         // cancel function for rootCtx
-	conn           jsonWriter                     // where responses will be sent
-	log            log.Logger
-	allowSubscribe bool
+	reg               *serviceRegistry
+	unsubscribeCb     *callback
+	idgen             func() ID                      // subscription ID generator
+	respWait          map[string]*requestOp          // active client requests
+	clientSubs        map[string]*ClientSubscription // active client subscriptions
+	callWG            sync.WaitGroup                 // pending call goroutines
+	rootCtx           context.Context                // canceled by close()
+	cancelRoot        func()                         // cancel function for rootCtx
+	conn              jsonWriter                     // where responses will be sent
+	log               log.Logger
+	allowSubscribe    bool
+	batchRequestLimit int
 
 	subLock    sync.Mutex
 	serverSubs map[ID]*Subscription
@@ -71,19 +72,20 @@ type callProc struct {
 	notifiers []*Notifier
 }
 
-func newHandler(connCtx context.Context, conn jsonWriter, idgen func() ID, reg *serviceRegistry) *handler {
+func newHandler(connCtx context.Context, conn jsonWriter, idgen func() ID, reg *serviceRegistry, batchRequestLimit int) *handler {
 	rootCtx, cancelRoot := context.WithCancel(connCtx)
 	h := &handler{
-		reg:            reg,
-		idgen:          idgen,
-		conn:           conn,
-		respWait:       make(map[string]*requestOp),
-		clientSubs:     make(map[string]*ClientSubscription),
-		rootCtx:        rootCtx,
-		cancelRoot:     cancelRoot,
-		allowSubscribe: true,
-		serverSubs:     make(map[ID]*Subscription),
-		log:            log.Root(),
+		reg:               reg,
+		idgen:             idgen,
+		conn:              conn,
+		respWait:          make(map[string]*requestOp),
+		clientSubs:        make(map[string]*ClientSubscription),
+		rootCtx:           rootCtx,
+		cancelRoot:        cancelRoot,
+		allowSubscribe:    true,
+		serverSubs:        make(map[ID]*Subscription),
+		log:               log.Root(),
+		batchRequestLimit: batchRequestLimit,
 	}
 	if conn.remoteAddr() != "" {
 		h.log = h.log.New("conn", conn.remoteAddr())
@@ -98,6 +100,14 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 	if len(msgs) == 0 {
 		h.startCallProc(func(cp *callProc) {
 			h.conn.writeJSON(cp.ctx, errorMessage(&invalidRequestError{"empty batch"}))
+		})
+		return
+	}
+
+	// Apply limit on total number of requests.
+	if h.batchRequestLimit != 0 && len(msgs) > h.batchRequestLimit {
+		h.startCallProc(func(cp *callProc) {
+			h.respondWithBatchTooLarge(cp, msgs)
 		})
 		return
 	}
@@ -128,6 +138,19 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 			n.activate()
 		}
 	})
+}
+func (h *handler) respondWithBatchTooLarge(cp *callProc, batch []*jsonrpcMessage) {
+	resp := errorMessage(&invalidRequestError{errMsgBatchTooLarge})
+	// Find the first call and add its "id" field to the error.
+	// This is the best we can do, given that the protocol doesn't have a way
+	// of reporting an error for the entire batch.
+	for _, msg := range batch {
+		if msg.isCall() {
+			resp.ID = msg.ID
+			break
+		}
+	}
+	h.conn.writeJSON(cp.ctx, []*jsonrpcMessage{resp})
 }
 
 // handleMsg handles a single message.

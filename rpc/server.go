@@ -42,10 +42,11 @@ const (
 
 // Server is an RPC server.
 type Server struct {
-	services serviceRegistry
-	idgen    func() ID
-	run      int32
-	codecs   mapset.Set
+	services       serviceRegistry
+	idgen          func() ID
+	run            int32
+	codecs         mapset.Set
+	batchItemLimit int
 }
 
 // NewServer creates a new server instance with no registered handlers.
@@ -56,6 +57,15 @@ func NewServer() *Server {
 	rpcService := &RPCService{server}
 	server.RegisterName(MetadataApi, rpcService)
 	return server
+}
+
+// SetBatchLimits sets limits applied to batch requests. There are two limits: 'itemLimit'
+// is the maximum number of items in a batch.
+//
+// This method should be called before processing any requests via ServeCodec, ServeHTTP,
+// ServeListener etc.
+func (s *Server) SetBatchLimits(itemLimit int) {
+	s.batchItemLimit = itemLimit
 }
 
 // RegisterName creates a service for the given receiver type under the given name. When no
@@ -97,7 +107,7 @@ func (s *Server) serveSingleRequest(ctx context.Context, codec ServerCodec) {
 		return
 	}
 
-	h := newHandler(ctx, codec, s.idgen, &s.services)
+	h := newHandler(ctx, codec, s.idgen, &s.services, s.batchItemLimit)
 	h.allowSubscribe = false
 	defer h.close(io.EOF, nil)
 
